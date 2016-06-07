@@ -7,8 +7,8 @@ import codecs
 import time
 import math
 from matplotlib import pyplot as plt
+from Wavelet_Ana import *
 
-import pywt
 
 
 
@@ -250,9 +250,10 @@ if __name__ == '__main__':
     fileio = DataIO()
 #     #print(fileio.select_orderdata_by_timeslice('2016-01-01-100'))
 #     print(fileio.select_orderdata_by_district('2016-01-01',1))
+    wa = wavelet_ana()
     count=0
     prefix = '2016-01-'
-    distinct = 10
+    distinct = 8
     for day in range(10):
         day = "{:02}".format(day+1)
         date = prefix+day
@@ -275,38 +276,26 @@ if __name__ == '__main__':
 
         levelsum = 4
 
+        temp = np.array(difflist)
+        #print('energy before',np.linalg.norm(temp))
+        coeffs = wa.get_wavelet_coeffs(difflist)
+        energy = 0
+        for c in coeffs:
+            energy+=np.linalg.norm(c)
+        #print('energy coeffs',energy)
 
+        coeffs = wa.coeffs_process(coeffs)
+        for c in coeffs:
+            print(c)
+        curve = wa.reconstruction_from_coeffs(coeffs)
 
-        coeffs = pywt.wavedec(difflist,'db3',level = levelsum)
-
-        for level in range(len(coeffs)):
-            if level<2:
-
-                if level == 0:
-                    continue
-                if level == 1:
-
-                    coeffs[level] = pywt.threshold(coeffs[level], 50, 'hard')
-                if level == 2:
-                    coeffs[level] = pywt.threshold(coeffs[level], 50, 'hard')
-
-                print(coeffs[level])
-            else:
-                coeffs[level] = pywt.threshold(coeffs[level],0,'less')
-                coeffs[level] = pywt.threshold(coeffs[level], 0, 'greater')
-                #print(coeffs_thd)
-                #coeffs[level] = coeffs_thd
-
-        curve = pywt.waverec(coeffs,'db3')
-
-
-        # plt.plot(curve, color='r', label='Reconstruction')
-        # plt.plot(difflist, color='b', label='Diff_Ori')
-        # plt.plot(gaplist, color='g', label='Gap_Ori')
-        # plt.legend()
-        # plt.show()
-        plt.plot(coeffs[0])
-    plt.show()
+        plt.plot(curve, color='r', label='Reconstruction')
+        plt.plot(difflist, color='b', label='Diff_Ori')
+        plt.plot(gaplist, color='g', label='Gap_Ori')
+        plt.legend()
+        plt.show()
+    #     plt.plot(coeffs[0])
+    # plt.show()
 
         #exit(0)
         # plt.plot(slicelist,difflist,color = 'r',label = 'Diff')
