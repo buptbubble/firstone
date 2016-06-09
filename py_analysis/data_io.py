@@ -29,6 +29,15 @@ class DataIO(object):
         self.init_traffic_data()
         self.init_order_diff_data()
 
+    #---------------gap data-------------#
+    def select_gap(self,ts,distinct):
+        if len(ts.split('-')) != 4:
+            print("Error in format of timeslice")
+        data = self.select_orderdata_by_district(ts,distinct)
+        gap = (data['demand']-data['supply']).values[0]
+        return gap
+
+
 
     #--------------diff data-----------------#
     def init_order_diff_data(self):
@@ -251,9 +260,9 @@ if __name__ == '__main__':
 #     #print(fileio.select_orderdata_by_timeslice('2016-01-01-100'))
 #     print(fileio.select_orderdata_by_district('2016-01-01',1))
     wa = wavelet_ana()
-    count=0
+
     prefix = '2016-01-'
-    distinct = 8
+    distinct = 9
     for day in range(10):
         day = "{:02}".format(day+1)
         date = prefix+day
@@ -266,31 +275,26 @@ if __name__ == '__main__':
 
 
             diff = fileio.select_orderDiff_by_ds_distinct(dateslice,distinct)
-            order = fileio.select_orderdata_by_district(dateslice,distinct)
-            gap = (order['demand']-order['supply']).values[0]
 
+            gap = fileio.select_gap(dateslice,distinct)
             if diff != None:
                 slicelist.append(slice)
                 difflist.append(diff)
                 gaplist.append(gap)
 
         levelsum = 4
+        print("curve len:", len(difflist))
 
-        temp = np.array(difflist)
-        #print('energy before',np.linalg.norm(temp))
+
         coeffs = wa.get_wavelet_coeffs(difflist)
-        energy = 0
-        for c in coeffs:
-            energy+=np.linalg.norm(c)
-        #print('energy coeffs',energy)
-
         coeffs = wa.coeffs_process(coeffs)
         for c in coeffs:
             print(c)
         curve = wa.reconstruction_from_coeffs(coeffs)
+        print("curve len:",len(curve))
 
         plt.plot(curve, color='r', label='Reconstruction')
-        plt.plot(difflist, color='b', label='Diff_Ori')
+        plt.plot(difflist, 'bo-', label='Diff_Ori')
         plt.plot(gaplist, color='g', label='Gap_Ori')
         plt.legend()
         plt.show()

@@ -10,6 +10,7 @@ import multiprocessing
 import time
 import random
 from optimization import *
+from Wavelet_Ana import *
 
 
 #需要测试的 ： 7,8,10,16,19
@@ -37,6 +38,7 @@ def get_color(index):
 
 class analysis:
     dataio = DataIO()
+    wa = wavelet_ana()
     verify_file_path = './predict_data_in_training.txt'
 
     weekend = [2, 3, 9, 17]
@@ -187,6 +189,55 @@ class analysis:
         opt.fit(X_train,y_train)
         return opt
 
+    def train_gap_diff_curve(self,day,distinct):
+        if len(day.split('-')) != 3:
+            print("The input of train_gap_diff_curve_by_distinct_day should be a xx-xx-xx")
+            exit(1)
+
+        difflist = []
+        for slice in range(144):
+            dateslice = day + '-' + str(slice + 1)
+            diffval = self.dataio.select_orderDiff_by_ds_distinct(dateslice,distinct)
+            if diffval != None:
+                difflist.append(diffval)
+        coeffs = self.wa.get_wavelet_coeffs(difflist)
+        #coeffs = self.wa.coeffs_process(coeffs)
+        curve = self.wa.reconstruction_from_coeffs(coeffs)
+        return np.array(curve)
+
+    def train_gap_diff_by_distinctlist(self,distinct_list,diffcurveList,count):
+        for distinct in distinct_list:
+            count[0]+=1
+            print("Training model in " + "{:.1f}".format(count[0] / 66 * 100) + "% completed...")
+            curve_dict = {}
+
+            weekday = self.select_test_day(self.weekday)
+            curve_sum = np.zeros(144)
+
+            for day in weekday:
+                curve = self.train_gap_diff_curve(day,distinct+1)
+                curve_sum+=curve
+            curve_dict['weekday'] = curve_sum/len(weekday)
+
+
+            sat = self.select_test_day(self.Sat)
+            curve_sum = np.zeros(144)
+            for day in sat:
+                curve = self.train_gap_diff_curve(day, distinct + 1)
+                curve_sum += curve
+            curve_dict['sat'] = curve_sum/len(sat)
+
+
+            sun = self.select_test_day(self.Sun)
+            curve_sum = np.zeros(144)
+            for day in sun:
+                curve = self.train_gap_diff_curve(day, distinct + 1)
+                curve_sum += curve
+            curve_dict['sun'] = curve_sum / len(sun)
+
+            diffcurveList[distinct] = curve_dict
+
+
     def drawing_perform_by_distinct_daylist(self,clf,daylist,distinct):
         daytest = self.select_test_day(daylist)
         for i,day in enumerate(daytest):
@@ -226,7 +277,7 @@ class analysis:
 
                 date = timeslice[0:10]
 
-                isWeekend = self.weekdayOrweekends(date)
+                isWeekend = self.isWeekends(date)
                 feature,gap = self.generateFeatureLabel(timeslice,distinct)
                 if feature == None or gap == 0:
                     continue
@@ -237,6 +288,67 @@ class analysis:
                 count+=1
 
         err_rate_sum/=count
+        return err_rate_sum
+
+    def verifying_in_training_set_bydiff(self,diffcurve):
+        fr = open(self.verify_file_path, 'r')
+        timeslicelist = []
+        for line in fr:
+            timeslice = line.split(' ')[0]
+            timeslicelist.append(timeslice)
+        fr.close()
+        # ------clf------distinct(0,65)-------type(0:weekday, 1:weekend)-----
+        count = 0
+        err_rate_sum = 0
+        for timeslice in timeslicelist:
+            for dis_ind in range(66):
+
+                distinct = dis_ind + 1
+                slice = int(timeslice.split('-')[-1])
+                date = timeslice[0:10]
+
+                gap = self.dataio.select_gap(timeslice, distinct)
+                if gap == 0:
+                    continue
+
+                ts_before1 = date+'-'+str(slice-1)
+                ts_before2 = date+'-'+str(slice-2)
+                ts_before3 = date+'-'+str(slice-3)
+                gap1 = self.dataio.select_gap(ts_before1,distinct)
+                gap2 = self.dataio.select_gap(ts_before2,distinct)
+                gap3 = self.dataio.select_gap(ts_before3,distinct)
+                diff1 = gap1-gap2
+                diff2 = gap2-gap3
+
+
+
+
+                daytype = self.isWeekends(date)
+                diffval1 = 0
+                diffval0 = 0
+                if daytype == 0:
+                    curve = diffcurve[dis_ind]['weekday']
+                    diffval0 = curve[slice - 1]
+                    diffval1 = curve[slice - 2]
+                if daytype == 1:
+                    curve = diffcurve[dis_ind]['sat']
+                    diffval0 = curve[slice - 1]
+                    diffval1 = curve[slice - 2]
+                if daytype == 2:
+                    curve = diffcurve[dis_ind]['sun']
+                    diffval0 = curve[slice - 1]
+                    diffval1 = curve[slice - 2]
+
+                gapdiff_predict = 2*diffval1-diff1+diffval0
+                gap_predicted =gap1+gapdiff_predict
+                if gap_predicted<0:
+                    gap_predicted=0
+                err_rate = abs((gap - gap_predicted) / gap)
+
+                err_rate_sum += err_rate
+                count += 1
+
+        err_rate_sum /= count
         return err_rate_sum
 
     def calculate_mape_by_DayDistinct(self,clf,daylist,distinct):
@@ -258,13 +370,15 @@ class analysis:
         return err_rate_sum
 
 
-    def weekdayOrweekends(self,date):
+    def isWeekends(self, date):
         day = int(date.split('-')[-1])
         if day == 1:
             return 1
         else:
-            if (day-1)%7 == 1 or (day-1)%7 == 2:
+            if (day-1)%7 == 1:
                 return 1
+            if (day-1)%7 == 2:
+                return 2
             else:
                 return 0
 
@@ -371,6 +485,8 @@ class analysis:
             clf_weekday = self.train_optimzation_model(self.weekday,distinct + 1)
             clf_weekend = self.train_optimzation_model(self.weekend,distinct + 1)
             clflist[distinct] = [clf_weekday, clf_weekend]
+
+
 
 
 if __name__ == '__main__':

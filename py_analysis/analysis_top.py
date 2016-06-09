@@ -25,6 +25,28 @@ class analysis_top:
 
 
 
+    def do_test_diff_method(self):
+        distinctlist = list(range(66))
+        dis_sep = chunks(distinctlist, 4)
+        manager = multiprocessing.Manager()
+        diffcurvelist = manager.list(range(66))
+        count = manager.list([0])
+
+        pool = multiprocessing.Pool(processes=4)
+        for part in dis_sep:
+            pool.apply_async(self.ana_m.train_gap_diff_by_distinctlist,(part,diffcurvelist,count))
+
+        pool.close()
+        pool.join()
+        print("Calculating MAPE...")
+        mape = self.ana_m.verifying_in_training_set_bydiff(diffcurvelist)
+
+        str_w = "MAPE=" + str(mape) + '\n'
+        print(str_w)
+        return mape
+
+
+
     def do_test_all(self,model = 'OPT',alpha=1,gamma=0.0001):
         distinctlist = list(range(66))
         dis_sep = chunks(distinctlist, 4)
@@ -208,4 +230,5 @@ if __name__ == '__main__':
     #ana_top.search_best_model_p
     # aras(trainday, testday, 8)
 
-    ana_top.do_test_all(model = 'OPT')
+    #ana_top.do_test_all(model = 'OPT')
+    ana_top.do_test_diff_method()

@@ -28,13 +28,13 @@ class wavelet_ana:
             if level == 2:
                 #coeffs[level] = self.retain_nmax_coeffs(3, coeffs[level])
                 std = np.std(coeffs[level])
-                coeffs[level] = pywt.threshold(coeffs[level], std*1.5, 'hard')
+                coeffs[level] = pywt.threshold(coeffs[level], std*2, 'hard')
                 continue
-            if level == 3:
-                # coeffs[level] = self.retain_nmax_coeffs(3, coeffs[level])
-                std = np.std(coeffs[level])
-                coeffs[level] = pywt.threshold(coeffs[level], std * 2, 'hard')
-                continue
+            # if level == 3:
+            #     # coeffs[level] = self.retain_nmax_coeffs(3, coeffs[level])
+            #     std = np.std(coeffs[level])
+            #     coeffs[level] = pywt.threshold(coeffs[level], std*2, 'hard')
+            #     continue
             else:
                 coeffs[level] = self.retain_nmax_coeffs(0, coeffs[level])
         return coeffs
