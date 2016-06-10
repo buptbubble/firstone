@@ -6,10 +6,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import multiprocessing
 import math
 import numpy as np
+from tools import *
 
-def chunks(arr, m):
-    n = int(math.ceil(len(arr) / float(m)))
-    return [arr[i:i + n] for i in range(0, len(arr), n)]
 
 def check_pos_in_list(pos,datalist):
     for item in datalist:
@@ -34,7 +32,7 @@ class analysis_top:
 
         pool = multiprocessing.Pool(processes=4)
         for part in dis_sep:
-            pool.apply_async(self.ana_m.train_gap_diff_by_distinctlist,(part,diffcurvelist,count))
+            pool.apply_async(self.ana_m.gene_filter_gap_list, (part, diffcurvelist, count))
 
         pool.close()
         pool.join()
@@ -54,7 +52,8 @@ class analysis_top:
         clflist = manager.list(range(66))
         count = manager.list([0])
 
-
+        #part = range(66)
+        #self.ana_m.train_OPT_clf_bydaylist(part, clflist, count)
 
         pool = multiprocessing.Pool(processes=4)
         for part in dis_sep:
@@ -230,5 +229,5 @@ if __name__ == '__main__':
     #ana_top.search_best_model_p
     # aras(trainday, testday, 8)
 
-    #ana_top.do_test_all(model = 'OPT')
-    ana_top.do_test_diff_method()
+    ana_top.do_test_all(model = 'OPT')
+    #ana_top.do_test_diff_method()

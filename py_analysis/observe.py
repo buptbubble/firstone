@@ -1,9 +1,9 @@
 import math
 import multiprocessing
-import analysis_main
+#import analysis_main
 from Wavelet_Ana import *
 from matplotlib import pyplot as plt
-from data_io import *
+#from data_io import *
 
 
 def chunks(arr, m):
@@ -33,6 +33,7 @@ def isWeekends(date):
 
 
 if __name__ == '__main__':
+
     distinct = 8
     ana_m = analysis_main.analysis()
     distinctlist = list(range(66))
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     wa = wavelet_ana()
     pool = multiprocessing.Pool(processes=4)
     for part in dis_sep:
-        pool.apply_async(ana_m.train_gap_diff_by_distinctlist, (part, diffcurvelist, count))
+        pool.apply_async(ana_m.gene_filter_gap_list, (part, diffcurvelist, count))
 
     pool.close()
     pool.join()

@@ -1,4 +1,5 @@
-from data_io import *
+import data_io
+from tools import *
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
@@ -37,7 +38,7 @@ def get_color(index):
     return colorlist[index % len(colorlist)]
 
 class analysis:
-    dataio = DataIO()
+    dataio = data_io.DataIO()
     wa = wavelet_ana()
     verify_file_path = './predict_data_in_training.txt'
 
@@ -69,9 +70,7 @@ class analysis:
             prefix = '2016-01-'
             date = prefix + day
             daytest.append(date)
-        # print("Day under testing...")
-        # for day in daytest:
-        #     print("\t"+day)
+
         return daytest
 
     def weather_main_trend(self,date,hour_interval=1):
@@ -277,7 +276,7 @@ class analysis:
 
                 date = timeslice[0:10]
 
-                isWeekend = self.isWeekends(date)
+                isWeekend = isWeekends(date)
                 feature,gap = self.generateFeatureLabel(timeslice,distinct)
                 if feature == None or gap == 0:
                     continue
@@ -323,7 +322,7 @@ class analysis:
 
 
 
-                daytype = self.isWeekends(date)
+                daytype = isWeekends(date)
                 diffval1 = 0
                 diffval0 = 0
                 if daytype == 0:
@@ -370,19 +369,8 @@ class analysis:
         return err_rate_sum
 
 
-    def isWeekends(self, date):
-        day = int(date.split('-')[-1])
-        if day == 1:
-            return 1
-        else:
-            if (day-1)%7 == 1:
-                return 1
-            if (day-1)%7 == 2:
-                return 2
-            else:
-                return 0
-
     def generateFeatureLabel(self,dateslice,distinct):
+        date = dateslice[0:10]
         weather = self.dataio.select_weatherdata_by_dateslice(dateslice)
         if type(weather) == type(None):
             #print("Weather info. does not exist in "+dateslice)
@@ -415,6 +403,16 @@ class analysis:
 
         ts_feature = gene_timeslice_feature(timeslice,4)
 
+
+        result = isWeekends(date)
+        if result == 0:
+            daytype = 'weekday'
+        if result == 1:
+            daytype = 'sat'
+        if result == 2:
+            daytype = 'sun'
+        gap_filtered = self.dataio.select_filter_gap(dateslice,distinct,daytype)
+
         traffic_level =[1,1,1,1]
         if not traffic_info.empty:
             level1 = (traffic_info['level1'].values)[0]
@@ -430,7 +428,7 @@ class analysis:
 
         trafficBeList = []
         GapBeList = []
-        for delta in range(3):
+        for delta in range(2):
             datesliceBe = dateslice[0:11]+str(timeslice-delta-1)
             orderdataBe = self.dataio.select_orderdata_by_district(datesliceBe, distinct)
             gap_real_Be = (orderdataBe['demand'] - orderdataBe['supply']).values
@@ -455,10 +453,11 @@ class analysis:
         feature = []
 
         feature.extend(GapBeList)
-        feature.extend(ts_feature)
+        #feature.extend(ts_feature)
+        feature.append(gap_filtered)
         #feature.extend(GapBeListExp2)
         #feature.append(GapBeListExp2)
-        #feature.extend(weather_feature)
+        feature.extend(weather_feature)
 
         #feature.extend(traffic_level)
         #feature.extend(trafficBeList)
@@ -496,6 +495,8 @@ if __name__ == '__main__':
     test = [4,7,8]
 
     ana = analysis()
+
+
 
     clf = ana.train_optimzation_model(daytest,8)
     ana.drawing_perform_by_distinct_daylist(clf,test,8)
