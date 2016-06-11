@@ -183,7 +183,7 @@ class analysis:
             for slice in range(144):
                 dateslice = day + '-' + str(slice + 1)
                 #feature, label = self.generateFeatureLabel(dateslice, distinct)
-                feature, gap = self.feature.generate(dateslice, distinct)
+                feature, label = self.feature.generate(dateslice, distinct)
 
                 if feature != None:
                     X_train.append(feature)
@@ -509,23 +509,3 @@ class analysis:
             clf_weekday = self.train_optimzation_model(self.weekday,distinct + 1)
             clf_weekend = self.train_optimzation_model(self.weekend,distinct + 1)
             clflist[distinct] = [clf_weekday, clf_weekend]
-
-
-
-
-if __name__ == '__main__':
-
-
-    daytest = [4,5,6]
-    test = [4,7,8]
-
-    ana = analysis()
-
-
-
-    clf = ana.train_optimzation_model(daytest,8)
-    ana.drawing_perform_by_distinct_daylist(clf,test,8)
-
-    exit(0)
-
-

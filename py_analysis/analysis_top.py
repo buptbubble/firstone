@@ -142,29 +142,6 @@ class analysis_top:
 
 
 
-        #
-        #
-        # for i in range(interval):
-        #     gamma = i*gamma_d+gammarange[0]
-        #     for j in range(interval):
-        #         alpha = j*alpha_d+alpharange[0]
-        #         mape = ana_top.do_test_in_small_sample(test_day,test_day,8,gamma,alpha)
-        #         data.append([gamma,alpha,mape])
-        #         count+=1
-        #         proc = int(count/(interval*interval)*100)
-        #         print("Processing "+str(proc)+"%")
-        #
-        #         data_draw = np.array(data)
-        #         X = data_draw[:, 0]
-        #         Y = data_draw[:, 1]
-        #         Z = data_draw[:, 2]
-        #
-        #         if X.size<6:
-        #             continue
-        #         fig = plt.figure()
-        #         ax = Axes3D(fig)
-        #         ax.plot_trisurf(X, Y, Z, cmap=cm.jet)
-        #         plt.show(block=False)
 
     def four_point_searching(self,center,step,point_searched,model_paras):# center,step中 0:gamma  1:alpha
         bestCenter = [0, 0]

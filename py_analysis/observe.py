@@ -87,7 +87,7 @@ class observe:
 
 if __name__ == '__main__':
     ob = observe()
-    ob.prediction_observe(9)
+    ob.prediction_observe(8)
     exit(0)
 
 

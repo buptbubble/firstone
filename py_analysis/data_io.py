@@ -16,6 +16,7 @@ def singleton(cls):
     def _wrapper(*args, **kwargs):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
+            print("Decorator loading class")
         return instances[cls]
     return _wrapper
 
