@@ -1,4 +1,4 @@
-import data_io
+from data_io import DataIO
 from tools import *
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -12,6 +12,7 @@ import time
 import random
 from optimization import *
 from Wavelet_Ana import *
+from feature import cFeature
 
 
 #需要测试的 ： 7,8,10,16,19
@@ -38,7 +39,8 @@ def get_color(index):
     return colorlist[index % len(colorlist)]
 
 class analysis:
-    dataio = data_io.DataIO()
+    dataio = DataIO()
+    feature = cFeature()
     wa = wavelet_ana()
     verify_file_path = './predict_data_in_training.txt'
 
@@ -162,7 +164,8 @@ class analysis:
         for day in daytest:
             for slice in range(144):
                 dateslice = day+'-'+str(slice+1)
-                feature,label = self.generateFeatureLabel(dateslice,distinct)
+                #feature,label = self.generateFeatureLabel(dateslice,distinct)
+                feature, gap = self.feature.generate(dateslice, distinct)
                 if feature != None:
                     X_train.append(feature)
                     y_train.append(label)
@@ -179,7 +182,9 @@ class analysis:
         for day in daytest:
             for slice in range(144):
                 dateslice = day + '-' + str(slice + 1)
-                feature, label = self.generateFeatureLabel(dateslice, distinct)
+                #feature, label = self.generateFeatureLabel(dateslice, distinct)
+                feature, gap = self.feature.generate(dateslice, distinct)
+
                 if feature != None:
                     X_train.append(feature)
                     y_train.append(label)
@@ -245,7 +250,8 @@ class analysis:
             slice_x = []
             for slice in range(144):
                 dateslice = day+'-'+str(slice+1)
-                feature,label = self.generateFeatureLabel(dateslice,distinct)
+                #feature,label = self.generateFeatureLabel(dateslice,distinct)
+                feature, gap = self.feature.generate(dateslice, distinct)
                 if feature == None:
                     continue
                 label_predicted = clf.predict([feature])
@@ -277,7 +283,9 @@ class analysis:
                 date = timeslice[0:10]
 
                 isWeekend = isWeekends(date)
-                feature,gap = self.generateFeatureLabel(timeslice,distinct)
+                #feature,gap = self.generateFeatureLabel(timeslice,distinct)
+                feature,gap = self.feature.generate(timeslice,distinct)
+
                 if feature == None or gap == 0:
                     continue
                 gap_predicted = clf[dis_ind][isWeekend].predict([feature])
@@ -357,7 +365,9 @@ class analysis:
         for date in daylist:
             for slice in range(144):
                 timeslice = date+'-'+str(slice+1)
-                feature, gap = self.generateFeatureLabel(timeslice, distinct)
+                #feature, gap = self.generateFeatureLabel(timeslice, distinct)
+                feature, gap = self.feature.generate(timeslice, distinct)
+
                 if feature == None or gap == 0:
                     continue
                 gap_predicted = clf.predict([feature])[0]
@@ -369,101 +379,116 @@ class analysis:
         return err_rate_sum
 
 
-    def generateFeatureLabel(self,dateslice,distinct):
-        date = dateslice[0:10]
-        weather = self.dataio.select_weatherdata_by_dateslice(dateslice)
-        if type(weather) == type(None):
-            #print("Weather info. does not exist in "+dateslice)
-            return None,None
-
-
-
-        weather_feature = [0] * 4
-        cur_weather = int(weather['weather'])
-        if cur_weather == 2 or cur_weather == 3 or cur_weather == 4:
-            weather_feature[0] = 1
-        elif cur_weather == 8:
-            weather_feature[1] = 1
-        elif cur_weather == 9:
-            weather_feature[2] = 1
-        else:
-            weather_feature[3] = 1
-        #print(weather_feature)
-        #weather_feature[int(weather['weather']) - 1] = 1
-
-        orderdata = self.dataio.select_orderdata_by_district(dateslice,distinct)
-        gap_real = (orderdata['demand']-orderdata['supply']).values
-        gap_real = gap_real[0]
-        timeslice = int(dateslice.split('-')[-1])
-        if timeslice <4:
-            return None,None
-        traffic_info = self.dataio.select_trafficdata_by_district(dateslice,distinct)
-        if traffic_info.empty and distinct !=54:
-            return None,None
-
-        ts_feature = gene_timeslice_feature(timeslice,4)
-
-
-        result = isWeekends(date)
-        if result == 0:
-            daytype = 'weekday'
-        if result == 1:
-            daytype = 'sat'
-        if result == 2:
-            daytype = 'sun'
-        gap_filtered = self.dataio.select_filter_gap(dateslice,distinct,daytype)
-
-        traffic_level =[1,1,1,1]
-        if not traffic_info.empty:
-            level1 = (traffic_info['level1'].values)[0]
-            level2 = (traffic_info['level2'].values)[0]
-            level3 = (traffic_info['level3'].values)[0]
-            level4 = (traffic_info['level4'].values)[0]
-            traffic_level[0] = level1
-            traffic_level[1] = level2
-            traffic_level[2] = level3
-            traffic_level[3] = level4
-
-        #print(traffic_level)
-
-        trafficBeList = []
-        GapBeList = []
-        for delta in range(2):
-            datesliceBe = dateslice[0:11]+str(timeslice-delta-1)
-            orderdataBe = self.dataio.select_orderdata_by_district(datesliceBe, distinct)
-            gap_real_Be = (orderdataBe['demand'] - orderdataBe['supply']).values
-            gap_real_Be = gap_real_Be[0]
-            GapBeList.append(gap_real_Be)
-
-            traffic_info = self.dataio.select_trafficdata_by_district(datesliceBe,distinct)
-            if not traffic_info.empty:
-                level1 = (traffic_info['level1'].values)[0]
-                level2 = (traffic_info['level2'].values)[0]
-                level3 = (traffic_info['level3'].values)[0]
-                level4 = (traffic_info['level4'].values)[0]
-                traffic_temp = level1 + level2 * 2 + level3 * 3 + level4 * 4
-            else:
-                traffic_temp = 1
-            trafficBeList.append(traffic_temp)
-
-
-        #GapBeListExp2 = [x*x for x in GapBeList]
-        GapBeListExp2 = math.pow(GapBeList[0],2)
-        #GapBeListExp2 = math.exp(GapBeList[0])
-        feature = []
-
-        feature.extend(GapBeList)
-        #feature.extend(ts_feature)
-        feature.append(gap_filtered)
-        #feature.extend(GapBeListExp2)
-        #feature.append(GapBeListExp2)
-        feature.extend(weather_feature)
-
-        #feature.extend(traffic_level)
-        #feature.extend(trafficBeList)
-        feature.append(1)
-
-        return feature,gap_real
+    # def generateFeatureLabel(self,dateslice,distinct):
+    #     date = dateslice[0:10]
+    #     weather = self.dataio.select_weatherdata_by_dateslice(dateslice)
+    #     if type(weather) == type(None):
+    #         #print("Weather info. does not exist in "+dateslice)
+    #         return None,None
+    #
+    #
+    #
+    #     weather_feature = [0] * 4
+    #     cur_weather = int(weather['weather'])
+    #     if cur_weather == 2 or cur_weather == 3 or cur_weather == 4:
+    #         weather_feature[0] = 1
+    #     elif cur_weather == 8:
+    #         weather_feature[1] = 1
+    #     elif cur_weather == 9:
+    #         weather_feature[2] = 1
+    #     else:
+    #         weather_feature[3] = 1
+    #     #print(weather_feature)
+    #     #weather_feature[int(weather['weather']) - 1] = 1
+    #
+    #     orderdata = self.dataio.select_orderdata_by_district(dateslice,distinct)
+    #     gap_real = (orderdata['demand']-orderdata['supply']).values
+    #     gap_real = gap_real[0]
+    #     timeslice = int(dateslice.split('-')[-1])
+    #     if timeslice <4:
+    #         return None,None
+    #     traffic_info = self.dataio.select_trafficdata_by_district(dateslice,distinct)
+    #     if traffic_info.empty and distinct !=54:
+    #         return None,None
+    #
+    #     ts_feature = gene_timeslice_feature(timeslice,4)
+    #
+    #
+    #     result = isWeekends(date)
+    #     if result == 0:
+    #         daytype = 'weekday'
+    #     if result == 1:
+    #         daytype = 'sat'
+    #     if result == 2:
+    #         daytype = 'sun'
+    #
+    #     gap_filtered = self.dataio.select_filter_gap(dateslice,distinct,daytype)
+    #     gap_filtered_last = self.dataio.select_filter_gap(get_last_ts(dateslice),distinct,daytype)
+    #     traffic_level =[1,1,1,1]
+    #     if not traffic_info.empty:
+    #         level1 = (traffic_info['level1'].values)[0]
+    #         level2 = (traffic_info['level2'].values)[0]
+    #         level3 = (traffic_info['level3'].values)[0]
+    #         level4 = (traffic_info['level4'].values)[0]
+    #         traffic_level[0] = level1
+    #         traffic_level[1] = level2
+    #         traffic_level[2] = level3
+    #         traffic_level[3] = level4
+    #
+    #     #print(traffic_level)
+    #
+    #     trafficBeList = []
+    #     GapBeList = []
+    #     for delta in range(2):
+    #         datesliceBe = dateslice[0:11]+str(timeslice-delta-1)
+    #         orderdataBe = self.dataio.select_orderdata_by_district(datesliceBe, distinct)
+    #         gap_real_Be = (orderdataBe['demand'] - orderdataBe['supply']).values
+    #         gap_real_Be = gap_real_Be[0]
+    #         GapBeList.append(gap_real_Be)
+    #
+    #         traffic_info = self.dataio.select_trafficdata_by_district(datesliceBe,distinct)
+    #         if not traffic_info.empty:
+    #             level1 = (traffic_info['level1'].values)[0]
+    #             level2 = (traffic_info['level2'].values)[0]
+    #             level3 = (traffic_info['level3'].values)[0]
+    #             level4 = (traffic_info['level4'].values)[0]
+    #             traffic_temp = level1 + level2 * 2 + level3 * 3 + level4 * 4
+    #         else:
+    #             traffic_temp = 1
+    #         trafficBeList.append(traffic_temp)
+    #
+    #
+    #     #GapBeListExp2 = [x*x for x in GapBeList]
+    #     GapBeListExp2 = math.pow(GapBeList[0],2)
+    #     #GapBeListExp2 = math.exp(GapBeList[0])
+    #     feature = []
+    #
+    #
+    #
+    #     feature.extend(GapBeList)
+    #     #feature.extend(ts_feature)
+    #     feature.append(gap_filtered)
+    #     feature.append(gap_filtered_last)
+    #
+    #     # diff = abs(gap_filtered - GapBeList[0])
+    #     # diff_exp05 = math.pow(diff,0.5)
+    #     # if gap_filtered - GapBeList[0]>0:
+    #     #     pass
+    #     # else:
+    #     #     diff_exp05 *= -1
+    #
+    #     #feature.append(math.log(gap_filtered-GapBeList[0]))
+    #
+    #     #feature.append(math.pow((GapBeList[0] - GapBeList[1]),2))
+    #     #feature.extend(GapBeListExp2)
+    #     #feature.append(diff_exp05)
+    #     #feature.extend(weather_feature)
+    #
+    #     #feature.extend(traffic_level)
+    #     #feature.extend(trafficBeList)
+    #     feature.append(1)
+    #
+    #     return feature,gap_real
 
     def gene_KRR_clf_bydaylist(self,distinct_list,clflist,count,gamma=1,alpha=1):
 

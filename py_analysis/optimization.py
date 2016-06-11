@@ -73,7 +73,8 @@ class optimization:
         y_list = []
         for f in feature:
             f = np.array(f)
-            predict_y = np.dot(f,self.coff)
+            predict_y = int(np.dot(f,self.coff))
+
             #predict_y = self.rbf_kernel(f,self.coff,self.sigma)
             if predict_y <0:
                 predict_y=0

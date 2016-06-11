@@ -7,6 +7,7 @@ import multiprocessing
 import math
 import numpy as np
 from tools import *
+import pickle
 
 
 def check_pos_in_list(pos,datalist):
@@ -52,8 +53,8 @@ class analysis_top:
         clflist = manager.list(range(66))
         count = manager.list([0])
 
-        #part = range(66)
-        #self.ana_m.train_OPT_clf_bydaylist(part, clflist, count)
+        # part = range(66)
+        # self.ana_m.train_OPT_clf_bydaylist(part, clflist, count)
 
         pool = multiprocessing.Pool(processes=4)
         for part in dis_sep:
@@ -68,6 +69,10 @@ class analysis_top:
         pool.close()
         pool.join()
 
+
+        clflist = list(clflist)
+        with open('clflist.pkl', 'wb') as f:
+            pickle.dump(clflist, f)
 
         print("Calculating MAPE...")
         mape = self.ana_m.verifying_in_training_set(clflist)

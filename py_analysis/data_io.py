@@ -11,9 +11,15 @@ from Wavelet_Ana import *
 import multiprocessing
 from tools import *
 
+def singleton(cls):
+    instances = {}
+    def _wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+    return _wrapper
 
-
-
+@singleton
 class DataIO:
     root = os.path.abspath(os.path.dirname(__file__))
 
@@ -41,7 +47,7 @@ class DataIO:
 
     #---------------filtered GAP----------------#
     def init_filter_gap(self):
-        print("Init filtered gap data...")
+        print("Init filtered gap data...",__name__)
         self.filter_gap_data = None
         if os.path.exists('gap_filtered.pkl'):
             with codecs.open('gap_filtered.pkl', 'rb') as f:
@@ -117,7 +123,7 @@ class DataIO:
             if gapval != None:
                 gaplist.append(gapval)
         coeffs = self.wa.get_wavelet_coeffs(gaplist)
-        # coeffs = self.wa.coeffs_process(coeffs)
+        #coeffs = self.wa.coeffs_process(coeffs)
         curve = self.wa.reconstruction_from_coeffs(coeffs)
         return np.array(curve)
 
@@ -351,76 +357,6 @@ class DataIO:
             key = dateslice + '-' + str(district)
             traffic_df = self.traffic_data[key]
             return traffic_df
-
-if __name__ == '__main__':
-    fileio = DataIO()
-
-#     #print(fileio.select_orderdata_by_timeslice('2016-01-01-100'))
-#     print(fileio.select_orderdata_by_district('2016-01-01',1))
-    wa = wavelet_ana()
-
-    prefix = '2016-01-'
-    distinct = 7
-    for day in range(3,15,1):
-        day = "{:02}".format(day+1)
-        date = prefix+day
-        print("----------------"+date+"-------------------")
-        slicelist = []
-        difflist = []
-        gaplist = []
-        gap_filter_list = []
-        for slice in range(144):
-            dateslice = date+"-"+str(slice+1)
-
-
-            diff = fileio.select_orderDiff_by_ds_distinct(dateslice,distinct)
-
-            gap = fileio.select_gap(dateslice,distinct)
-
-            result = isWeekends(date)
-            if result == 0:
-                type ='weekday'
-            if result ==1:
-                type = 'sat'
-            if result == 2:
-                type = 'sun'
-
-            gap_filter_list.append(fileio.select_filter_gap(dateslice,distinct,type))
-            if diff != None:
-                slicelist.append(slice)
-                difflist.append(diff)
-                gaplist.append(gap)
-
-        levelsum = 4
-        print("curve len:", len(difflist))
-
-
-        coeffs = wa.get_wavelet_coeffs(difflist)
-        coeffs = wa.coeffs_process(coeffs)
-        for c in coeffs:
-            print(c)
-        curve = wa.reconstruction_from_coeffs(coeffs)
-        print("curve len:",len(curve))
-
-        #plt.plot(curve, color='r', label='Reconstruction')
-        plt.plot(gap_filter_list, color='r', label='Gap filtered')
-        plt.plot(difflist, 'bo-', label='Diff_Ori')
-        plt.plot(gaplist, color='g', label='Gap_Ori')
-        plt.title(date+'  '+type)
-        plt.legend()
-        plt.show()
-    #     plt.plot(coeffs[0])
-    # plt.show()
-
-        #exit(0)
-        # plt.plot(slicelist,difflist,color = 'r',label = 'Diff')
-        # plt.plot(slicelist,gaplist,color = 'b',label = 'Gap')
-        #
-        #
-        # plt.title(date+"   "+str(distinct))
-        # plt.legend()
-        #
-        # plt.show()
 
 
 
