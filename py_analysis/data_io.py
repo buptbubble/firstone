@@ -16,7 +16,7 @@ def singleton(cls):
     def _wrapper(*args, **kwargs):
         if cls not in instances:
             instances[cls] = cls(*args, **kwargs)
-            print("Decorator loading class")
+
         return instances[cls]
     return _wrapper
 
@@ -57,14 +57,18 @@ class DataIO:
             distinctlist = list(range(66))
             dis_sep = chunks(distinctlist, 4)
             manager = multiprocessing.Manager()
-            filterd_gap_list = manager.list(range(66))
+            filterd_gap_list = manager.list(list(range(66)))
+
             count = manager.list([0])
 
-            #self.gene_filter_gap_list(range(66), filterd_gap_list, count)
 
+
+            # part = list(range(66))
+            # self.gene_filter_gap_list(part, filterd_gap_list, count)
 
             pool = multiprocessing.Pool(processes=4)
             for part in dis_sep:
+                print(part)
                 pool.apply_async(self.gene_filter_gap_list, (part, filterd_gap_list, count))
 
             pool.close()
@@ -361,3 +365,5 @@ class DataIO:
 
 
 
+if __name__ == '__main__':
+    a = DataIO()

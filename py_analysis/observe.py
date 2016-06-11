@@ -12,9 +12,57 @@ from feature import cFeature
 
 class observe:
     clflist = []
-
     fileio = DataIO()
     feature = cFeature()
+
+    def drawResult(self,date,distinct,clf):
+
+        gaplist = []
+        gap_predict_list = []
+        slicelist = []
+        gap_filter_list = []
+        errratelist = []
+
+        count = 0
+        errate_sum = 0
+        for slice in range(144):
+            dateslice = date + "-" + str(slice + 1)
+            feature, gap = self.feature.generate(dateslice, distinct)
+            if feature == None:
+                continue
+            gap_predict = clf.predict([feature])
+            datetype = isWeekendsText(date)
+            filterGap = self.fileio.select_filter_gap(dateslice, distinct, datetype)
+            gap_filter_list.append(filterGap)
+            gaplist.append(gap)
+            gap_predict_list.append(gap_predict)
+            if gap != 0:
+                errrate = abs((gap - gap_predict) / gap)[0]
+                errate_sum += errrate
+                count += 1
+            else:
+                errrate = 0
+            errratelist.append(errrate)
+            slicelist.append(slice + 1)
+        errate_sum /= count
+
+        ax1 = plt.gca()
+        ax1.plot(slicelist, gaplist, 'ro-', label='Gap')
+        ax1.plot(slicelist, gap_predict_list, 'bo-', label='Predict')
+        ax1.plot(slicelist, gap_filter_list, 'yo-', label='Filtered')
+        ax2 = ax1.twinx()
+        #print(errate_sum)
+        legendText = "Error rate:{:.2f}".format(errate_sum)
+        ax2.bar(slicelist, errratelist, color='g', alpha=0.2, align='center', label=legendText)
+        plt.grid()
+        ax1.legend(loc=2)
+        ax2.legend(loc=1)
+
+        titleText = date + " " + datetype + " Distinct:" + str(distinct)
+        plt.title(titleText)
+        plt.show()
+
+
     def prediction_observe(self,distinct):
         if os.path.exists('clflist.pkl'):
             with open('clflist.pkl', 'rb') as f:

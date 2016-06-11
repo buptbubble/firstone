@@ -164,11 +164,11 @@ class analysis:
         for day in daytest:
             for slice in range(144):
                 dateslice = day+'-'+str(slice+1)
-                #feature,label = self.generateFeatureLabel(dateslice,distinct)
+                #feature,gap = self.generateFeatureLabel(dateslice,distinct)
                 feature, gap = self.feature.generate(dateslice, distinct)
                 if feature != None:
                     X_train.append(feature)
-                    y_train.append(label)
+                    y_train.append(gap)
         clf = KernelRidge(kernel='rbf', gamma=gamma,alpha=alpha)
         clf.fit(X_train, y_train)
 
@@ -184,6 +184,9 @@ class analysis:
                 dateslice = day + '-' + str(slice + 1)
                 #feature, label = self.generateFeatureLabel(dateslice, distinct)
                 feature, label = self.feature.generate(dateslice, distinct)
+                #print(feature,label)
+                #print(feature1,label1)
+                #print("-----------")
 
                 if feature != None:
                     X_train.append(feature)
@@ -250,12 +253,12 @@ class analysis:
             slice_x = []
             for slice in range(144):
                 dateslice = day+'-'+str(slice+1)
-                #feature,label = self.generateFeatureLabel(dateslice,distinct)
+                #feature,gap = self.generateFeatureLabel(dateslice,distinct)
                 feature, gap = self.feature.generate(dateslice, distinct)
                 if feature == None:
                     continue
                 label_predicted = clf.predict([feature])
-                gap_real.append(label)
+                gap_real.append(gap)
                 gap_predict.append(label_predicted)
                 slice_x.append(slice)
 
@@ -378,7 +381,7 @@ class analysis:
         err_rate_sum /= count
         return err_rate_sum
 
-
+    #
     # def generateFeatureLabel(self,dateslice,distinct):
     #     date = dateslice[0:10]
     #     weather = self.dataio.select_weatherdata_by_dateslice(dateslice)
@@ -439,7 +442,7 @@ class analysis:
     #
     #     trafficBeList = []
     #     GapBeList = []
-    #     for delta in range(2):
+    #     for delta in range(3):
     #         datesliceBe = dateslice[0:11]+str(timeslice-delta-1)
     #         orderdataBe = self.dataio.select_orderdata_by_district(datesliceBe, distinct)
     #         gap_real_Be = (orderdataBe['demand'] - orderdataBe['supply']).values
@@ -463,8 +466,7 @@ class analysis:
     #     #GapBeListExp2 = math.exp(GapBeList[0])
     #     feature = []
     #
-    #
-    #
+    #     #feature.extend(weather_feature)
     #     feature.extend(GapBeList)
     #     #feature.extend(ts_feature)
     #     feature.append(gap_filtered)
@@ -482,7 +484,7 @@ class analysis:
     #     #feature.append(math.pow((GapBeList[0] - GapBeList[1]),2))
     #     #feature.extend(GapBeListExp2)
     #     #feature.append(diff_exp05)
-    #     #feature.extend(weather_feature)
+    #
     #
     #     #feature.extend(traffic_level)
     #     #feature.extend(trafficBeList)

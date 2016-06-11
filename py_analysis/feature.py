@@ -7,7 +7,7 @@ class cFeature:
     date = ''
     distinct = 0
     daytype = ''
-    back_len = 2
+    back_len = 3
     def generate(self,ds,distinct):
         self.date = ds[0:10]
         self.datelice = ds
@@ -21,11 +21,11 @@ class cFeature:
         #--------------------feature generate----------------------#
         f = []
 
-        # wea_feature = self.weather_feature()
-        # if wea_feature != None:
-        #     f.extend()
-        # else:
-        #     return None, None
+        wea_feature = self.weather_feature()
+        if wea_feature != None:
+            f.extend(wea_feature)
+        else:
+            return None, None
 
         gap_feature = self.gap_feature()
         f.extend(gap_feature)
@@ -57,12 +57,12 @@ class cFeature:
             gapfeature.append(gap_temp)
             ls = get_last_ts(ls)
 
-        ls = self.datelice
-        for i in range(self.back_len):
-            gap_filtered = self.dataio.select_filter_gap(ls,self.distinct,self.daytype)
-            #print(ls,self.daytype)
-            gapfeature.append(gap_filtered)
-            ls = get_last_ts(ls)
+        # ls = self.datelice
+        # for i in range(self.back_len):
+        #     gap_filtered = self.dataio.select_filter_gap(ls,self.distinct,self.daytype)
+        #     #print(ls,self.daytype)
+        #     gapfeature.append(gap_filtered)
+        #     ls = get_last_ts(ls)
 
         return gapfeature
 

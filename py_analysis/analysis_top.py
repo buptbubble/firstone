@@ -8,6 +8,7 @@ import math
 import numpy as np
 from tools import *
 import pickle
+from observe import observe
 
 
 def check_pos_in_list(pos,datalist):
@@ -21,7 +22,7 @@ class analysis_top:
 
     weekend_train = [2, 3, 9, 17]
     weekday_train = [4, 5, 6, 12, 13, 14, 15, 18]
-
+    obs = observe()
 
 
     def do_test_diff_method(self):
@@ -81,12 +82,16 @@ class analysis_top:
         return mape
 
 
-    def do_test_in_small_sample(self,train_day,test_day,distinct,gamma,alpha,isdrawing=0):
+    def do_test_in_small_sample(self,train_day,test_day,distinct,isdrawing=0):
 
-        clf = self.ana_m.train_kernel_ridge_regression_clf(train_day,distinct,gamma,alpha)
+        clf = self.ana_m.train_optimzation_model(train_day,distinct)
         mape = self.ana_m.calculate_mape_by_DayDistinct(clf,test_day,distinct)
+        print('mape:',mape)
         if isdrawing:
-            self.ana_m.drawing_perform_by_distinct_daylist(clf,test_day,distinct)
+            #self.ana_m.drawing_perform_by_distinct_daylist(clf,test_day,distinct)
+            testdaylist = select_test_day(test_day)
+            for day in testdaylist:
+                self.obs.drawResult(day,distinct,clf)
         return mape
 
     def search_best_model_paras(self, train_day, test_day, distinct):
@@ -201,15 +206,11 @@ class analysis_top:
 
 if __name__ == '__main__':
     ana_top = analysis_top()
-    trainday = [4,5]
-    testday = [6,7]
-    gamma = 0.0001
-    alpha = 5.5
+    trainday = [4,5,8,11,13,14]
+    testday = [6,7,12]
 
-    gamma_range = [0.00001,0.00002]
-    alpha_range = [0.1,0.2]
-    #ana_top.search_best_model_p
-    # aras(trainday, testday, 8)
 
-    ana_top.do_test_all(model = 'OPT')
-    #ana_top.do_test_diff_method()
+
+    #ana_top.do_test_all(model = 'OPT')
+    ana_top.do_test_in_small_sample(trainday,testday,8,1)
+
