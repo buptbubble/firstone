@@ -1,5 +1,6 @@
 from data_io import DataIO
 from tools import *
+import math
 
 class cFeature:
     dataio = DataIO()
@@ -21,13 +22,15 @@ class cFeature:
         #--------------------feature generate----------------------#
         f = []
 
-        wea_feature = self.weather_feature()
-        if wea_feature != None:
-            f.extend(wea_feature)
-        else:
-            return None, None
+        # wea_feature = self.weather_feature()
+        # if wea_feature != None:
+        #     f.extend(wea_feature)
+        # else:
+        #     return None, None
 
         gap_feature = self.gap_feature()
+        if gap_feature == None:
+            return None,None
         f.extend(gap_feature)
         f.append(1)
         gap = self.dataio.select_gap(self.datelice,self.distinct)
@@ -51,18 +54,50 @@ class cFeature:
 
     def gap_feature(self):
         gapfeature = []
-        ls = get_last_ts(self.datelice)
-        for i in range(self.back_len):
-            gap_temp = self.dataio.select_gap(ls,self.distinct)
-            gapfeature.append(gap_temp)
-            ls = get_last_ts(ls)
 
-        # ls = self.datelice
+        ls = get_last_ts(self.datelice)
+        gap_b1 = self.dataio.select_gap(ls,self.distinct)
+        ls = get_last_ts(ls)
+        gap_b2 = self.dataio.select_gap(ls,self.distinct)
+        ls = get_last_ts(ls)
+        gap_b3 = self.dataio.select_gap(ls,self.distinct)
+
+        gap_diff_b1 = gap_b1 - gap_b2
+        gap_diff_b2 = gap_b2 - gap_b3
+
+        if gap_b2 != 0:
+            gapfeature.append(gap_diff_b1/gap_b2)
+        else:
+            gapfeature.append(5)
+
+        gapfeature.append(gap_b1)
+        gapfeature.append(gap_diff_b1)
+        gapfeature.append(gap_diff_b2)
+
+
+        #ls = self.datelice
         # for i in range(self.back_len):
         #     gap_filtered = self.dataio.select_filter_gap(ls,self.distinct,self.daytype)
         #     #print(ls,self.daytype)
         #     gapfeature.append(gap_filtered)
         #     ls = get_last_ts(ls)
+        gap_filtered_b2 = self.dataio.select_filter_gap(get_last_ts(get_last_ts(self.datelice)),self.distinct,self.daytype)
+        gap_filtered_b1 = self.dataio.select_filter_gap(get_last_ts(self.datelice),self.distinct,self.daytype)
+        gap_filtered_cur = self.dataio.select_filter_gap(self.datelice,self.distinct,self.daytype)
+        gap_filtered_a1 = self.dataio.select_filter_gap(get_next_ts(self.datelice),self.distinct,self.daytype)
+        if gap_filtered_a1 == None or gap_filtered_b1 == None or gap_filtered_b2 == None:
+            return None
+
+        gap_filter_diff_b2 = gap_filtered_b1 - gap_filtered_b2
+        gap_filter_diff_b1 = gap_filtered_cur-gap_filtered_b1
+        gap_filter_diff_a1 = gap_filtered_a1-gap_filtered_cur
+        #gapfeature.append(gap_filter_diff_b2)
+        gapfeature.append(gap_filter_diff_b1)
+
+
+        #gapfeature.append(math.pow(gap_filter_diff_b1,3))
+        #gapfeature.append(math.pow(gap_filter_diff_b1,2))
+        #gapfeature.append(gap_filter_diff_a1)
 
         return gapfeature
 

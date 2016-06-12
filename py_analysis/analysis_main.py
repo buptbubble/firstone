@@ -166,7 +166,13 @@ class analysis:
                 dateslice = day+'-'+str(slice+1)
                 #feature,gap = self.generateFeatureLabel(dateslice,distinct)
                 feature, gap = self.feature.generate(dateslice, distinct)
+
+
                 if feature != None:
+                    if gap != 0:
+                        gap = math.log10(float(gap))
+                    else:
+                        gap = -1
                     X_train.append(feature)
                     y_train.append(gap)
         clf = KernelRidge(kernel='rbf', gamma=gamma,alpha=alpha)
@@ -292,6 +298,10 @@ class analysis:
                 if feature == None or gap == 0:
                     continue
                 gap_predicted = clf[dis_ind][isWeekend].predict([feature])
+
+                gap_predicted = math.pow(10,gap_predicted)
+
+
                 err_rate = abs((gap-gap_predicted[0])/gap)
 
                 err_rate_sum+=err_rate
@@ -374,6 +384,12 @@ class analysis:
                 if feature == None or gap == 0:
                     continue
                 gap_predicted = clf.predict([feature])[0]
+                #print('Before log:',gap_predicted)
+                gap_predicted = int(math.pow(10, gap_predicted))
+
+                if gap_predicted<0:
+                    gap_predicted = 0
+               # print('After log:', gap_predicted,gap)
                 err_rate = abs((gap - gap_predicted) / gap)
                 #print(timeslice+"\t{:.2f}\t{}\t{:.0f}".format(err_rate,gap,gap_predicted))
                 err_rate_sum += err_rate

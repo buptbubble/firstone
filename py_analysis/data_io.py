@@ -80,10 +80,13 @@ class DataIO:
 
     def select_filter_gap(self,ts,distinct,type):
         if len(ts.split('-'))!=4:
-            return
+            return None
         else:
             slice = int(ts.split('-')[-1])
-            return self.filter_gap_data[distinct-1][type][slice-1]
+            if slice >=144:
+                return None
+            else:
+                return self.filter_gap_data[distinct-1][type][slice-1]
 
 
     def gene_filter_gap_list(self, distinct_list, filter_gap_list, count):

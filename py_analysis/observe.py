@@ -30,14 +30,19 @@ class observe:
             feature, gap = self.feature.generate(dateslice, distinct)
             if feature == None:
                 continue
-            gap_predict = clf.predict([feature])
+            gap_predict = clf.predict([feature])[0]
+
+            gap_predict = int(math.pow(10, gap_predict))
+            if gap_predict<0:
+                gap_predict=0
+
             datetype = isWeekendsText(date)
             filterGap = self.fileio.select_filter_gap(dateslice, distinct, datetype)
             gap_filter_list.append(filterGap)
             gaplist.append(gap)
             gap_predict_list.append(gap_predict)
             if gap != 0:
-                errrate = abs((gap - gap_predict) / gap)[0]
+                errrate = abs((gap - gap_predict) / gap)
                 errate_sum += errrate
                 count += 1
             else:
@@ -45,13 +50,13 @@ class observe:
             errratelist.append(errrate)
             slicelist.append(slice + 1)
         errate_sum /= count
-
+        plt.subplot(211)
         ax1 = plt.gca()
         ax1.plot(slicelist, gaplist, 'ro-', label='Gap')
         ax1.plot(slicelist, gap_predict_list, 'bo-', label='Predict')
         ax1.plot(slicelist, gap_filter_list, 'yo-', label='Filtered')
         ax2 = ax1.twinx()
-        #print(errate_sum)
+
         legendText = "Error rate:{:.2f}".format(errate_sum)
         ax2.bar(slicelist, errratelist, color='g', alpha=0.2, align='center', label=legendText)
         plt.grid()
@@ -60,6 +65,18 @@ class observe:
 
         titleText = date + " " + datetype + " Distinct:" + str(distinct)
         plt.title(titleText)
+        plt.subplot(212)
+
+        plt.plot(slicelist, gaplist, 'ro-', label='Gap')
+        plt.plot(slicelist, gap_predict_list, 'bo-', label='Predict')
+        plt.plot(slicelist, gap_filter_list, 'yo-', label='Filtered')
+        plt.grid()
+        plt.legend(loc = 2)
+        plt.ylim(0,10)
+        ax1 = plt.gca()
+        ax2 = ax1.twinx()
+        ax2.bar(slicelist, errratelist, color='g', alpha=0.2, align='center', label=legendText)
+        ax2.set_ylim(0,1)
         plt.show()
 
 
@@ -114,7 +131,7 @@ class observe:
                 slicelist.append(slice+1)
             errate_sum/= count
 
-            ax1 = plt.gca()
+            ax1 = p1.gca()
             ax1.plot(slicelist,gaplist,'ro-',label = 'Gap')
             ax1.plot(slicelist,gap_predict_list,'bo-',label = 'Predict')
             ax1.plot(slicelist,gap_filter_list,'yo-',label = 'Filtered')
@@ -128,6 +145,7 @@ class observe:
 
             titleText  = date+" "+datetype+" Distinct:"+str(distinct)
             plt.title(titleText)
+
             plt.show()
 
 

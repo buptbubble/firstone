@@ -62,6 +62,14 @@ def get_last_ts(ts):
         ts_last = prefix+str(slice)
         return  ts_last
 
+def get_next_ts(ts):
+    if len(ts.split('-')) != 4:
+        return None
+    else:
+        prefix = ts[0:11]
+        slice = int(ts.split('-')[-1]) + 1
+        ts_last = prefix + str(slice)
+        return ts_last
 
 
 

@@ -42,7 +42,7 @@ class optimization:
             #print(self.rbf_kernel(x, coff,self.sigma))
             ErrRateSum += ErrRate
         ErrAdj = ErrRateSum + 1 * np.dot(coff, coff)
-        return ErrAdj
+        return ErrRateSum
 
     def fit(self,x_train,y_train):
 

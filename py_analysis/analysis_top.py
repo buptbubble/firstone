@@ -82,10 +82,12 @@ class analysis_top:
         return mape
 
 
-    def do_test_in_small_sample(self,train_day,test_day,distinct,isdrawing=0):
+    def do_test_in_small_sample(self,train_day,test_day,distinct,isdrawing=0,gamma=0.1,alpha=0.001):
 
-        clf = self.ana_m.train_optimzation_model(train_day,distinct)
+        clf = self.ana_m.train_kernel_ridge_regression_clf(train_day,distinct,gamma,alpha)
+        #clf = self.ana_m.train_optimzation_model(train_day,distinct)
         mape = self.ana_m.calculate_mape_by_DayDistinct(clf,test_day,distinct)
+       # print('Clf coeffs:',clf.coff)
         print('mape:',mape)
         if isdrawing:
             #self.ana_m.drawing_perform_by_distinct_daylist(clf,test_day,distinct)
@@ -96,14 +98,13 @@ class analysis_top:
 
     def search_best_model_paras(self, train_day, test_day, distinct):
         point_searched = []
-        gamma_start = 0.00002
-        gamma_step = 0.000004
-        alpha_start = 0.1
-        alpha_step = 0.02
+        gamma = 0.1
+        alpha = 0.001
+
         mape = 10000000
 
-        center = [gamma_start,alpha_start]
-        step = [gamma_step,alpha_step]
+        center = [gamma,alpha]
+        step = [gamma/2,alpha/2]
         model_paras = {}
         model_paras['test_day']=test_day
         model_paras['train_day'] = train_day
@@ -185,7 +186,7 @@ class analysis_top:
                     bestDir = direction
             else:
                 mape = ana_top.do_test_in_small_sample(model_paras['train_day'], model_paras['test_day'],\
-                                                       model_paras['distinct'], cur_gamma, cur_alpha,1)
+                                                       model_paras['distinct'],0 ,cur_gamma, cur_alpha)
                 point_searched.append([cur_gamma, cur_alpha, mape])
                 #print("hat!")
                 #print([cur_gamma, cur_alpha, mape])
@@ -207,10 +208,23 @@ class analysis_top:
 if __name__ == '__main__':
     ana_top = analysis_top()
     trainday = [4,5,8,11,13,14]
+    #trainday = [4,5]
     testday = [6,7,12]
+    distinct = 8
 
+    gamma = 0.375
+    alpha = 0.0015
 
-
-    #ana_top.do_test_all(model = 'OPT')
-    ana_top.do_test_in_small_sample(trainday,testday,8,1)
+    #ana_top.do_test_all(model = 'KRR')
+    ana_top.do_test_in_small_sample(trainday,testday,distinct,1,gamma,alpha)
+    exit(0)
+    model_paras = {}
+    model_paras['train_day'] = [4,5,8,11,13,14]
+    model_paras['test_day'] = [6,7,12]
+    model_paras['distinct'] = 9
+    center = [gamma,alpha]
+    step = [gamma/2,alpha/2]
+    pointsearched = []
+    ana_top.search_best_model_paras(trainday,testday,8)
+    #ana_top.four_point_searching(center,step,pointsearched,model_paras)
 
