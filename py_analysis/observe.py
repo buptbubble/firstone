@@ -35,6 +35,10 @@ class observe:
             gap_predict = int(math.pow(10, gap_predict))
             if gap_predict<0:
                 gap_predict=0
+            isWeekend = isWeekendsText(date)
+            gap_filtered = self.fileio.select_filter_gap(dateslice, distinct, isWeekend)
+            if gap_predict > 2 * gap_filtered:
+                gap_predict = 2 * gap_filtered
 
             datetype = isWeekendsText(date)
             filterGap = self.fileio.select_filter_gap(dateslice, distinct, datetype)
@@ -92,7 +96,7 @@ class observe:
         for day in range(3, 21, 1):
             day = "{:02}".format(day + 1)
             date = prefix + day
-            print("----------------" + date + "-------------------")
+            #print("----------------" + date + "-------------------")
 
             gaplist = []
             gap_predict_list = []
@@ -113,7 +117,9 @@ class observe:
                     continue
                 if isWeekend == 2:
                     isWeekend=1
-                gap_predict = clflist[distinct-1][isWeekend].predict([feature])
+                gap_predict = clflist[distinct-1][isWeekend].predict([feature])[0]
+
+                gap_predict = int(math.pow(10,gap_predict))
 
                 datetype = isWeekendsText(date)
                 filterGap = self.fileio.select_filter_gap(dateslice,distinct,datetype)
@@ -121,7 +127,7 @@ class observe:
                 gaplist.append(gap)
                 gap_predict_list.append(gap_predict)
                 if gap != 0:
-                    errrate = abs((gap-gap_predict)/gap)[0]
+                    errrate = abs((gap-gap_predict)/gap)
                     errate_sum+=errrate
                     count+=1
                 else:
@@ -131,12 +137,14 @@ class observe:
                 slicelist.append(slice+1)
             errate_sum/= count
 
-            ax1 = p1.gca()
+
+            plt.subplot(211)
+            ax1 = plt.gca()
             ax1.plot(slicelist,gaplist,'ro-',label = 'Gap')
             ax1.plot(slicelist,gap_predict_list,'bo-',label = 'Predict')
             ax1.plot(slicelist,gap_filter_list,'yo-',label = 'Filtered')
             ax2 = ax1.twinx()
-            print(errate_sum)
+
             legendText = "Error rate:{:.2f}".format(errate_sum)
             ax2.bar(slicelist,errratelist,color = 'g',alpha = 0.2,align='center',label = legendText)
             plt.grid()
@@ -146,6 +154,17 @@ class observe:
             titleText  = date+" "+datetype+" Distinct:"+str(distinct)
             plt.title(titleText)
 
+            plt.subplot(212)
+            plt.plot(slicelist, gaplist, 'ro-', label='Gap')
+            plt.plot(slicelist, gap_predict_list, 'bo-', label='Predict')
+            plt.plot(slicelist, gap_filter_list, 'yo-', label='Filtered')
+            plt.grid()
+            plt.legend(loc=2)
+            plt.ylim(0, 10)
+            ax1 = plt.gca()
+            ax2 = ax1.twinx()
+            ax2.bar(slicelist, errratelist, color='g', alpha=0.2, align='center', label=legendText)
+            ax2.set_ylim(0, 1)
             plt.show()
 
 
@@ -153,82 +172,6 @@ class observe:
 
 if __name__ == '__main__':
     ob = observe()
-    ob.prediction_observe(8)
+    ob.prediction_observe(9)
     exit(0)
 
-
-    clflist = []
-    if os.path.exists('clflist.pkl'):
-        with open('clflist.pkl', 'rb') as f:
-            clflist = pickle.load(f)
-    else:
-        print("Clf doesn't exist.")
-        exit(0)
-
-    distinct = 8
-    ana_m = analysis_main.analysis()
-    distinctlist = list(range(66))
-    testday = range(distinct-2,distinct+2,1)
-    dis_sep = chunks(testday, 4)
-    manager = multiprocessing.Manager()
-    diffcurvelist = manager.list(range(66))
-    count = manager.list([0])
-    fileio = DataIO()
-    wa = wavelet_ana()
-    pool = multiprocessing.Pool(processes=4)
-    for part in dis_sep:
-        pool.apply_async(ana_m.gene_filter_gap_list, (part, diffcurvelist, count))
-
-    pool.close()
-    pool.join()
-    print("Finish...")
-
-    prefix = '2016-01-'
-
-    for day in range(3,21,1):
-        day = "{:02}".format(day + 1)
-        date = prefix + day
-        print("----------------" + date + "-------------------")
-        slicelist = []
-        difflist = []
-        gaplist = []
-        for slice in range(144):
-            dateslice = date + "-" + str(slice + 1)
-
-            diff = fileio.select_orderDiff_by_ds_distinct(dateslice, distinct)
-
-            gap = fileio.select_gap(dateslice, distinct)
-            if diff != None:
-                slicelist.append(slice)
-                difflist.append(diff)
-                gaplist.append(gap)
-
-        tag = isWeekends(date)
-        title = 'Distinct '+str(distinct)+" " +date+"  "
-        if tag == 0:
-            curve = diffcurvelist[distinct-1]['weekday']
-            title +='weekday'
-        if tag == 1:
-            curve = diffcurvelist[distinct-1]['sat']
-            title += 'sat'
-        if tag == 2:
-            curve = diffcurvelist[distinct-1]['sun']
-            title += 'sun'
-
-        diff_pred = [0]
-        curve = curve[0:143]
-        for i,val in enumerate(curve):
-            if i == 142:
-                break
-            diff_temp = 2*val - difflist[i] +curve[i+1]
-            diff_pred.append(diff_temp)
-
-
-
-        plt.plot(diff_pred,'gs-',label = 'Pred_Diff')
-        plt.plot(curve, color='r', label='Reconstruction')
-        plt.plot(difflist, 'bo-', label='Diff_Ori')
-        #plt.plot(gaplist, color='g', label='Gap_Ori')
-        plt.title(title)
-        plt.legend()
-        plt.show()

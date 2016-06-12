@@ -72,6 +72,12 @@ def get_next_ts(ts):
         return ts_last
 
 
+def gene_timeslice_feature(value,step=6,length=144):
+    count_sum = math.floor(length/step)+1
+    pos = math.floor(value/step)
+    f = [0]*count_sum
+    f[pos] = 1
+    return f
 
 if __name__ == '__main__':
 

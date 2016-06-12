@@ -172,10 +172,11 @@ class analysis:
                     if gap != 0:
                         gap = math.log10(float(gap))
                     else:
-                        gap = -1
+                        gap = -0.1
                     X_train.append(feature)
                     y_train.append(gap)
-        clf = KernelRidge(kernel='rbf', gamma=gamma,alpha=alpha)
+        clf = KernelRidge(kernel='polynomial',  gamma=gamma,alpha=alpha)
+        #clf = KernelRidge(kernel='polynomial', degree=3,alpha=0.01)
         clf.fit(X_train, y_train)
 
         return clf
@@ -297,12 +298,12 @@ class analysis:
 
                 if feature == None or gap == 0:
                     continue
-                gap_predicted = clf[dis_ind][isWeekend].predict([feature])
+                gap_predicted = clf[dis_ind][isWeekend].predict([feature])[0]
 
-                gap_predicted = math.pow(10,gap_predicted)
-
-
-                err_rate = abs((gap-gap_predicted[0])/gap)
+                gap_predicted = int(math.pow(10,gap_predicted))
+                if gap_predicted<0:
+                    gap_predicted =0
+                err_rate = abs((gap-gap_predicted)/gap)
 
                 err_rate_sum+=err_rate
                 count+=1
@@ -371,6 +372,30 @@ class analysis:
         err_rate_sum /= count
         return err_rate_sum
 
+    def calculate_norm2_error(self, clf, daylist, distinct):
+        err_val = 0
+        count = 0
+        daylist = self.select_test_day(daylist)
+        for date in daylist:
+            for slice in range(144):
+                timeslice = date + '-' + str(slice + 1)
+
+                feature, gap = self.feature.generate(timeslice, distinct)
+
+                if feature == None or gap == 0:
+                    continue
+                if gap !=0:
+                    gap_log = math.log10(gap)
+                else:
+                    gap_log = 0
+
+                gap_predicted = clf.predict([feature])[0]
+
+                err_val+=(gap_log-gap_predicted)**2
+                count+=1
+        err_val /= count
+        return err_val
+
     def calculate_mape_by_DayDistinct(self,clf,daylist,distinct):
         err_rate_sum=0
         count=0
@@ -389,6 +414,10 @@ class analysis:
 
                 if gap_predicted<0:
                     gap_predicted = 0
+                isWeekend = isWeekendsText(date)
+                gap_filtered = self.dataio.select_filter_gap(timeslice,distinct,isWeekend)
+                if gap_predicted>2*gap_filtered:
+                    gap_predicted = 2*gap_filtered
                # print('After log:', gap_predicted,gap)
                 err_rate = abs((gap - gap_predicted) / gap)
                 #print(timeslice+"\t{:.2f}\t{}\t{:.0f}".format(err_rate,gap,gap_predicted))

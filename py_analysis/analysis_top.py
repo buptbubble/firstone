@@ -47,7 +47,7 @@ class analysis_top:
 
 
 
-    def do_test_all(self,model = 'OPT',alpha=1,gamma=0.0001):
+    def do_test_all(self,model = 'OPT',gamma=1,alpha=0.0001):
         distinctlist = list(range(66))
         dis_sep = chunks(distinctlist, 4)
         manager = multiprocessing.Manager()
@@ -87,24 +87,31 @@ class analysis_top:
         clf = self.ana_m.train_kernel_ridge_regression_clf(train_day,distinct,gamma,alpha)
         #clf = self.ana_m.train_optimzation_model(train_day,distinct)
         mape = self.ana_m.calculate_mape_by_DayDistinct(clf,test_day,distinct)
-       # print('Clf coeffs:',clf.coff)
-        print('mape:',mape)
+        norm2err = self.ana_m.calculate_norm2_error(clf,test_day,distinct)
+
         if isdrawing:
-            #self.ana_m.drawing_perform_by_distinct_daylist(clf,test_day,distinct)
+            print('mape:', mape)
             testdaylist = select_test_day(test_day)
             for day in testdaylist:
                 self.obs.drawResult(day,distinct,clf)
+        return mape,norm2err
+
+    def train_KRR_returnNorm2Error(self, train_day, test_day, distinct, isdrawing=0, gamma=0.1, alpha=0.001):
+
+        clf = self.ana_m.train_kernel_ridge_regression_clf(train_day, distinct, gamma, alpha)
+        # clf = self.ana_m.train_optimzation_model(train_day,distinct)
+        mape = self.ana_m.calculate_mape_by_DayDistinct(clf, test_day, distinct)
+
         return mape
 
-    def search_best_model_paras(self, train_day, test_day, distinct):
+    def search_best_model_paras(self, center,train_day, test_day, distinct):
         point_searched = []
-        gamma = 0.1
-        alpha = 0.001
 
-        mape = 10000000
 
-        center = [gamma,alpha]
-        step = [gamma/2,alpha/2]
+        norm2 = 10000000
+
+
+        step = [center[0]/2,center[1]/2]
         model_paras = {}
         model_paras['test_day']=test_day
         model_paras['train_day'] = train_day
@@ -116,8 +123,8 @@ class analysis_top:
             print("Center Before:")
             print("Gamma:",center[0],"Alpha:",center[1])
             centerlast = center[:]
-            mapelast = mape
-            mape = self.four_point_searching(center,step,point_searched,model_paras)
+            norm2last = norm2
+            norm2,mape = self.four_point_searching(center,step,point_searched,model_paras)
             samepointflag = 0
             if center[0] == centerlast[0] and center[1] == centerlast[1]:
                 step[0]/=2
@@ -128,10 +135,10 @@ class analysis_top:
             print("Center After:")
             print("Gamma:", center[0], "Alpha:", center[1])
             print("Gamma step=",step[0],"Alpha step=",step[1])
-            print("Current Mape={:.04}\tDelta={:.06}".format(mape,mapelast-mape))
+            print("Cur Norm2 ={:.04}\tCur mape = {:.04f}\tDelta={:.06}".format(norm2,mape,norm2last-norm2))
 
 
-            if (mapelast - mape <0.0005) and samepointflag ==0 :
+            if (norm2last - norm2 <0.0005) and samepointflag ==0 :
                 break
 
         data_draw = np.array(point_searched)
@@ -152,6 +159,7 @@ class analysis_top:
     def four_point_searching(self,center,step,point_searched,model_paras):# center,step中 0:gamma  1:alpha
         bestCenter = [0, 0]
         bestMape = 10000000
+        bestNorm2 = 10000000
         bestDir = -1
         for direction in range(5):
             if direction == 0:
@@ -178,21 +186,23 @@ class analysis_top:
             if isInData != -1:
                 #print("hit!")
                 #print("---->",isInData,"cur--->",[cur_gamma, cur_alpha])
-                if isInData[2] < bestMape:
+                if isInData[2] < bestNorm2:
                     #print(isInData[2],bestMape)
-                    bestMape = isInData[2]
+                    bestNorm2 = isInData[2]
+                    bestMape = isInData[3]
                     bestCenter[0] = cur_gamma
                     bestCenter[1] = cur_alpha
                     bestDir = direction
             else:
-                mape = ana_top.do_test_in_small_sample(model_paras['train_day'], model_paras['test_day'],\
+                mape,norm2err = ana_top.do_test_in_small_sample(model_paras['train_day'], model_paras['test_day'],\
                                                        model_paras['distinct'],0 ,cur_gamma, cur_alpha)
-                point_searched.append([cur_gamma, cur_alpha, mape])
+                point_searched.append([cur_gamma, cur_alpha, norm2err,mape])
                 #print("hat!")
                 #print([cur_gamma, cur_alpha, mape])
                 #print(point_searched)
-                if mape < bestMape:
-
+                print('norm2:',norm2err,'\tmape:',mape)
+                if norm2err < bestNorm2:
+                    bestNorm2 = norm2err
                     bestMape = mape
                     bestCenter[0] = cur_gamma
                     bestCenter[1] = cur_alpha
@@ -201,30 +211,32 @@ class analysis_top:
         center[1] = bestCenter[1]
 
         print ("Best direction:"+str(bestDir))
-        return bestMape
+        return bestNorm2,bestMape
 
 
 
 if __name__ == '__main__':
     ana_top = analysis_top()
-    trainday = [4,5,8,11,13,14]
+    trainday = [4,5,8,11,13,14,15,18,19]
     #trainday = [4,5]
-    testday = [6,7,12]
-    distinct = 8
+    testday = [4,6,7,12]
+    distinct = 9
 
-    gamma = 0.375
-    alpha = 0.0015
+    gamma = 2.5e-5
+    alpha = 0.01
 
-    #ana_top.do_test_all(model = 'KRR')
-    ana_top.do_test_in_small_sample(trainday,testday,distinct,1,gamma,alpha)
+    bestgamma = 2.5e-5
+    bestalpha = 0.001
+
+    ana_top.do_test_all('KRR',bestgamma,bestalpha)
     exit(0)
-    model_paras = {}
-    model_paras['train_day'] = [4,5,8,11,13,14]
-    model_paras['test_day'] = [6,7,12]
-    model_paras['distinct'] = 9
-    center = [gamma,alpha]
-    step = [gamma/2,alpha/2]
-    pointsearched = []
-    ana_top.search_best_model_paras(trainday,testday,8)
-    #ana_top.four_point_searching(center,step,pointsearched,model_paras)
+
+    mape,norm2 = ana_top.do_test_in_small_sample(trainday,testday,distinct,1,gamma,alpha)
+    exit(0)
+
+    # center = [gamma,alpha]
+    # step = [gamma/2,alpha/2]
+    # pointsearched = []
+    # ana_top.search_best_model_paras(center,trainday,testday,9)
+
 

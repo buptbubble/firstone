@@ -1,6 +1,7 @@
 from data_io import DataIO
 from tools import *
 import math
+import numpy as np
 
 class cFeature:
     dataio = DataIO()
@@ -22,7 +23,7 @@ class cFeature:
         #--------------------feature generate----------------------#
         f = []
 
-        # wea_feature = self.weather_feature()
+        #wea_feature = self.weather_feature()
         # if wea_feature != None:
         #     f.extend(wea_feature)
         # else:
@@ -32,6 +33,9 @@ class cFeature:
         if gap_feature == None:
             return None,None
         f.extend(gap_feature)
+        # ts_feature = self.ts_feature()
+        # f.extend(ts_feature)
+
         f.append(1)
         gap = self.dataio.select_gap(self.datelice,self.distinct)
         return f,gap
@@ -61,17 +65,20 @@ class cFeature:
         gap_b2 = self.dataio.select_gap(ls,self.distinct)
         ls = get_last_ts(ls)
         gap_b3 = self.dataio.select_gap(ls,self.distinct)
+        gap_std = np.std(np.array([gap_b1,gap_b2,gap_b3]))
+        gapfeature.append(gap_std)
 
         gap_diff_b1 = gap_b1 - gap_b2
         gap_diff_b2 = gap_b2 - gap_b3
 
-        if gap_b2 != 0:
-            gapfeature.append(gap_diff_b1/gap_b2)
-        else:
-            gapfeature.append(5)
+        # if gap_b1 != 0:
+        #     gapfeature.append(gap_diff_b1/gap_b1)
+        # else:
+        #     gapfeature.append(gap_diff_b1)
 
         gapfeature.append(gap_b1)
         gapfeature.append(gap_diff_b1)
+        #gapfeature.append(gap_diff_b1**2)
         gapfeature.append(gap_diff_b2)
 
 
@@ -93,11 +100,15 @@ class cFeature:
         gap_filter_diff_a1 = gap_filtered_a1-gap_filtered_cur
         #gapfeature.append(gap_filter_diff_b2)
         gapfeature.append(gap_filter_diff_b1)
-
+        gapfeature.append(gap_filter_diff_a1)
+        gapfeature.append(gap_filtered_cur)
 
         #gapfeature.append(math.pow(gap_filter_diff_b1,3))
         #gapfeature.append(math.pow(gap_filter_diff_b1,2))
-        #gapfeature.append(gap_filter_diff_a1)
 
         return gapfeature
+    def ts_feature(self):
+        slice = int(self.datelice.split('-')[-1])
+        ts_feature = gene_timeslice_feature(slice,8)
+        return ts_feature
 
