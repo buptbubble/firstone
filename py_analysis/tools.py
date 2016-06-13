@@ -33,7 +33,7 @@ def isWeekends(date):
 def isWeekendsText(date):
     day = int(date.split('-')[-1])
     if day == 1:
-        return 1
+        return 'Do not consider Jue 1st'
     else:
         if (day - 1) % 7 == 1:
             return 'sat'

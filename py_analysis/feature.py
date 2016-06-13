@@ -15,6 +15,7 @@ class cFeature:
         self.datelice = ds
         self.distinct = distinct
         self.daytype = isWeekendsText(self.date)
+
         slice = int(ds.split('-')[-1])
         if slice <=self.back_len:
 
@@ -36,7 +37,7 @@ class cFeature:
         # ts_feature = self.ts_feature()
         # f.extend(ts_feature)
 
-        f.append(1)
+        #f.append(1)
         gap = self.dataio.select_gap(self.datelice,self.distinct)
         return f,gap
 
@@ -88,6 +89,7 @@ class cFeature:
         #     #print(ls,self.daytype)
         #     gapfeature.append(gap_filtered)
         #     ls = get_last_ts(ls)
+
         gap_filtered_b2 = self.dataio.select_filter_gap(get_last_ts(get_last_ts(self.datelice)),self.distinct,self.daytype)
         gap_filtered_b1 = self.dataio.select_filter_gap(get_last_ts(self.datelice),self.distinct,self.daytype)
         gap_filtered_cur = self.dataio.select_filter_gap(self.datelice,self.distinct,self.daytype)
@@ -111,4 +113,17 @@ class cFeature:
         slice = int(self.datelice.split('-')[-1])
         ts_feature = gene_timeslice_feature(slice,8)
         return ts_feature
+
+    def traffic_feature(self):
+        traffic_info = self.dataio.select_trafficdata_by_district(get_last_ts(self.datelice), self.distinct)
+        traffic_level = []
+        if not traffic_info.empty:
+            level1 = (traffic_info['level1'].values)[0]
+            level2 = (traffic_info['level2'].values)[0]
+            level3 = (traffic_info['level3'].values)[0]
+            level4 = (traffic_info['level4'].values)[0]
+            traffic_level = [level1, level2, level3, level4]
+        else:
+            traffic_level = [0, 0, 0, 0]
+        return  traffic_level
 

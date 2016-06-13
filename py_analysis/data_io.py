@@ -7,7 +7,7 @@ import codecs
 import time
 import math
 from matplotlib import pyplot as plt
-from Wavelet_Ana import *
+#from Wavelet_Ana import *
 import multiprocessing
 from tools import *
 
@@ -28,7 +28,7 @@ class DataIO:
     weekday = [4, 5, 6, 12, 13, 14, 15, 18]
     Sat = [2, 9]
     Sun = [3, 17]
-    wa = wavelet_ana()
+    #wa = wavelet_ana()
 
     def __init__(self):
         data_path = '..\data_clean'
@@ -79,6 +79,7 @@ class DataIO:
                 pickle.dump(self.filter_gap_data, f)
 
     def select_filter_gap(self,ts,distinct,type):
+
         if len(ts.split('-'))!=4:
             return None
         else:

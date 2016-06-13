@@ -228,8 +228,8 @@ if __name__ == '__main__':
     bestgamma = 2.5e-5
     bestalpha = 0.001
 
-    ana_top.do_test_all('KRR',bestgamma,bestalpha)
-    exit(0)
+    # ana_top.do_test_all('KRR',bestgamma,bestalpha)
+    # exit(0)
 
     mape,norm2 = ana_top.do_test_in_small_sample(trainday,testday,distinct,1,gamma,alpha)
     exit(0)
